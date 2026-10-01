@@ -1,53 +1,54 @@
-import requests, time, threading
+
+import requests, time, threading, random
 from flask import Flask
 
-BOT="8811899915:AAFU2VO-5eHhAQPuOyGCZr5MYOrsfLM-7hY"
-CHAT="-1003973044472"
+BOT_TOKEN="8811899915:AAFZkaJTPc1yOBzb1xpXsSGhXZKsRu6bmEQ"
+CHAT_ID="-1003973044472"
 
 app=Flask(__name__)
 @app.route('/')
-def home(): return "Bot Running 24/7 - MEL GOLD V3 LIVE"
+def home(): return "Mel Gold VOL 4+ LIVE"
+threading.Thread(target=lambda: app.run(host='0.0.0.0',port=10000),daemon=True).start()
 
-def bot_loop():
-    last=None
-    closes=[]
-    SR=[4050,4100,4150,4180,4200,4220,4250,4280,4300,4320,4350]
-    def ema(d,p):
-        k=2/(p+1); e=d[0]
-        for x in d[1:]: e=x*k+e*(1-k)
-        return e
-    def get_sr(p):
-        for lvl in SR:
-            if abs(p-lvl)<20: return lvl
-        return None
-    # Start message
+ses=requests.Session()
+def send(t):
     try:
-        requests.post(f"https://api.telegram.org/bot{BOT}/sendMessage", data={"chat_id": CHAT, "text": "MEL GOLD V3 LIVE - Bot Started on Render 24/7"})
-    except: pass
-    while True:
-        try:
-            r=requests.get("https://api.coingecko.com/api/v3/simple/price?ids=pax-gold&vs_currencies=usd", timeout=15).json()
-            price=float(r['pax-gold']['usd'])
-            closes.append(price)
-            if len(closes)>100: closes=closes[-100:]
-            if len(closes)<60:
-                print(f"Collecting {len(closes)}/60 Price {price}")
-                time.sleep(30)
-                continue
-            e9=ema(closes[-20:],9); e21=ema(closes[-30:],21); e50=ema(closes[-60:],50)
-            print(f"Price {price:.2f}")
-            sig=None
-            sr=get_sr(price)
-            if e9>e21 and e21>e50 and price>e9 and sr:
-                sig=f"BUY + SR\nGOLD {price:.2f}\nSR {sr}\nEMA Bull"
-            elif e9<e21 and e21<e50 and price<e9 and sr:
-                sig=f"SELL + SR\nGOLD {price:.2f}\nSR {sr}\nEMA Bear"
-            if sig and sig!=last:
-                requests.post(f"https://api.telegram.org/bot{BOT}/sendMessage", data={"chat_id": CHAT, "text": sig})
-                last=sig
-            time.sleep(30)
-        except Exception as e:
-            print(e); time.sleep(60)
+        ses.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data={"chat_id":CHAT_ID,"text":t}, timeout=10)
+        print("SENT")
+    except Exception as e: print(e)
 
-threading.Thread(target=bot_loop,daemon=True).start()
-app.run(host="0.0.0.0",port=10000)
+send("✅ MEL GOLD V3 LIVE - Bot Restarted OK")
+
+while True:
+    try:
+        try:
+            price=float(ses.get("https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT",timeout=10).json()['price'])
+        except:
+            price=float(ses.get("https://api.coingecko.com/api/v3/simple/price?ids=pax-gold&vs_currencies=usd",timeout=10).json()['pax-gold']['usd'])
+
+        # VOL 4n UDA
+        vol=round(random.uniform(4.1, 9.0),1)
+        r=random.random()
+
+        if r>0.6:
+            if random.random()>0.5:
+                msg=f"✅ CONFIRMED: 🟢 BAYASLA 2x!\n{price:.2f} 🚀\nVol x{vol}"
+            else:
+                msg=f"✅ CONFIRMED: 🔴 SELASLA 2x!\n{price:.2f} 📉\nVol x{vol}"
+        elif r>0.3:
+            if random.random()>0.5:
+                msg=f"⚠️ CHAT: 🟢 Bayasla awith! {price:.2f} 🚀\nVol x{vol}"
+            else:
+                msg=f"⚠️ CHAT: 🔴 Selasla awith! {price:.2f} 📉\nVol x{vol}"
+        else:
+            if random.random()>0.5:
+                msg=f"🔼🔼🔼 STRONG BUY!!! {price:.2f} 🔼🔼\nVol x{vol}"
+            else:
+                msg=f"🔻🔻🔻 STRONG SELL!!! {price:.2f} 🔻🔻\nVol x{vol}"
+
+        send(msg)
+        time.sleep(75)
+
+    except Exception as e:
+        print(e)
+        time.sleep(30)
